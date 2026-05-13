@@ -1,0 +1,130 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Bot, Users, MessageCircle, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+
+export default function Volunteers() {
+  const navigate = useNavigate();
+  const [showVolunteers, setShowVolunteers] = React.useState(false);
+
+  const { data: volunteers = [] } = useQuery({
+    queryKey: ['volunteers'],
+    queryFn: () => base44.entities.Volunteer.list(),
+  });
+
+  if (showVolunteers) {
+    return (
+      <div className="px-5 pt-6 pb-6">
+        <button onClick={() => setShowVolunteers(false)} className="flex items-center gap-1 text-muted-foreground mb-4">
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm">กลับ</span>
+        </button>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <h1 className="text-2xl font-bold text-foreground">เลือก อสม. ในพื้นที่</h1>
+          {volunteers.length === 0 ? (
+            <div className="text-center py-12 bg-card rounded-3xl border border-border">
+              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">ยังไม่มี อสม. ในระบบ</p>
+            </div>
+          ) : (
+            volunteers.map(vol => (
+              <motion.div
+                key={vol.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card rounded-3xl p-5 border border-border shadow-sm"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">{vol.name}</h3>
+                    <p className="text-sm text-muted-foreground">{vol.area}</p>
+                    {vol.speciality && <p className="text-xs text-primary mt-0.5">{vol.speciality}</p>}
+                  </div>
+                  {vol.available && (
+                    <span className="ml-auto text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">ว่าง</span>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1 rounded-2xl" onClick={() => navigate(`/chat/${vol.id}`)}>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    พิมพ์คุย
+                  </Button>
+                  <a href={`tel:${vol.phone}`} className="flex-1">
+                    <Button className="w-full rounded-2xl">
+                      <Phone className="w-4 h-4 mr-2" />
+                      โทรคุย
+                    </Button>
+                  </a>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-5 pt-6 pb-6">
+      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-muted-foreground mb-6">
+        <ChevronLeft className="w-5 h-5" />
+        <span className="text-sm">หน้าแรก</span>
+      </button>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">ต้องการความช่วยเหลือ?</h1>
+          <p className="text-muted-foreground mt-1 text-sm">เลือกรูปแบบที่ต้องการ</p>
+        </div>
+
+        {/* AI Chat Option */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/screening/check')}
+          className="w-full bg-gradient-to-br from-sky-500 to-sky-700 text-white rounded-3xl p-6 text-left shadow-lg shadow-sky-200"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+              <Bot className="w-9 h-9" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">คุยกับ AI</h2>
+              <p className="text-sky-100 text-sm mt-1">วิเคราะห์อาการและให้คำแนะนำเบื้องต้น ตลอด 24 ชั่วโมง</p>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-sm text-sky-100">
+            <span className="w-2 h-2 bg-green-300 rounded-full"></span>
+            ออนไลน์ตลอดเวลา • ฟรี
+          </div>
+        </motion.button>
+
+        {/* Volunteer Option */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowVolunteers(true)}
+          className="w-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-3xl p-6 text-left shadow-lg shadow-emerald-200"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+              <Users className="w-9 h-9" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">คุยกับ อสม.</h2>
+              <p className="text-emerald-100 text-sm mt-1">พูดคุยกับเจ้าหน้าที่สาธารณสุขในชุมชนของคุณ</p>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-sm text-emerald-100">
+            <span className="w-2 h-2 bg-yellow-300 rounded-full"></span>
+            เจ้าหน้าที่ {volunteers.length} คนในระบบ
+          </div>
+        </motion.button>
+      </motion.div>
+    </div>
+  );
+}

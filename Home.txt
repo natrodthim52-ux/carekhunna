@@ -1,0 +1,105 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Stethoscope, Users, Heart, Shield } from 'lucide-react';
+import SOSButton from '@/components/home/SOSButton';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.12 } }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
+
+export default function Home() {
+  return (
+    <div className="px-5 pt-8 pb-6 relative">
+      <SOSButton />
+
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-8">
+        {/* Header */}
+        <motion.div variants={item} className="text-center pt-6">
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Heart className="w-10 h-10 text-primary" fill="currentColor" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground">Care Khun</h1>
+          <p className="text-lg text-primary font-medium mt-1">เพราะเรา แคร์คุณ</p>
+        </motion.div>
+
+        {/* Greeting */}
+        <motion.div
+          variants={item}
+          className="bg-card rounded-3xl p-6 shadow-sm border border-border">
+          
+          <p className="text-lg text-foreground leading-relaxed">
+            สวัสดีน้าา... 👋
+          </p>
+          <p className="text-base text-muted-foreground mt-1">
+            วันนี้มีเรื่องอะไรให้เราแคร์หรอ?
+          </p>
+        </motion.div>
+
+        {/* Main CTAs */}
+        <motion.div variants={item} className="space-y-4">
+          <Link to="/screening">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-3xl p-6 shadow-lg shadow-primary/20 flex items-center gap-5">
+              
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                <Stethoscope className="w-8 h-8" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">คัดกรองอาการ</h2>
+                <p className="text-sm opacity-90 mt-1">
+                  ประเมินความเสี่ยงสุขภาพเบื้องต้นด้วย AI
+                </p>
+              </div>
+            </motion.div>
+          </Link>
+
+          <Link to="/volunteers">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-card border-2 border-primary/20 text-foreground rounded-3xl p-6 shadow-sm flex items-center gap-5 mt-4">
+              
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">คุยกับ อสม.</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  ติดต่อปรึกษา อสม. ในพื้นที่ของคุณ
+                </p>
+              </div>
+            </motion.div>
+          </Link>
+        </motion.div>
+
+        {/* Quick Links */}
+        <motion.div variants={item} className="grid grid-cols-3 gap-3">
+          {[
+          { to: '/medicine', icon: Shield, label: 'ตู้ยา', color: 'bg-emerald-50 text-emerald-600' },
+          { to: '/knowledge', icon: Heart, label: 'ความรู้', color: 'bg-blue-50 text-blue-600' },
+          { to: '/profile', icon: Users, label: 'สมุดสุขภาพ', color: 'bg-amber-50 text-amber-600' }].
+          map(({ to, icon: Icon, label, color }) =>
+          <Link key={to} to={to}>
+              <motion.div
+              whileTap={{ scale: 0.95 }}
+              className={`${color} rounded-2xl p-4 flex flex-col items-center gap-2 text-center`}>
+              
+                <Icon className="w-6 h-6" />
+                <span className="text-xs font-semibold">{label}</span>
+              </motion.div>
+            </Link>
+          )}
+        </motion.div>
+      </motion.div>
+    </div>);
+
+}

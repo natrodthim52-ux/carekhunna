@@ -1,0 +1,88 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { AlertTriangle, ChevronLeft, Phone, MapPin, HeartPulse, ThermometerSun } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+export default function PreTriage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="px-5 pt-6 pb-6">
+      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-muted-foreground mb-4">
+        <ChevronLeft className="w-5 h-5" />
+        <span className="text-sm">ย้อนกลับ</span>
+      </button>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
+        {/* Header */}
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 text-center">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <AlertTriangle className="w-8 h-8 text-amber-600" />
+          </div>
+          <h1 className="text-xl font-bold text-amber-800">
+            เดี๋ยวก่อนน้าา...
+          </h1>
+          <p className="text-base text-amber-700 mt-1">
+            เช็กอาการด่วนกันนิดนึง!
+          </p>
+        </div>
+
+        {/* Question */}
+        <p className="text-center text-foreground font-medium">
+          ตอนนี้คุณหรือผู้ป่วยมีอาการเหล่านี้หรือไม่?
+        </p>
+
+        {/* Emergency Option */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/screening/emergency')}
+          className="w-full bg-red-50 border-2 border-red-200 rounded-3xl p-5 text-left hover:bg-red-100 transition-colors"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center shrink-0">
+              <HeartPulse className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-red-700">
+                ⚠️ มีอาการรุนแรง
+              </h3>
+              <ul className="text-sm text-red-600 mt-2 space-y-1">
+                <li>• หอบเหนื่อยมาก หายใจไม่ออก</li>
+                <li>• ตัวสั่น / ชัก</li>
+                <li>• ตัวชา / ปากเบี้ยว</li>
+                <li>• เจ็บหน้าอกรุนแรง</li>
+                <li>• หมดสติ / ไม่รู้สึกตัว</li>
+              </ul>
+            </div>
+          </div>
+        </motion.button>
+
+        {/* Normal Option */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/screening/check')}
+          className="w-full bg-green-50 border-2 border-green-200 rounded-3xl p-5 text-left hover:bg-green-100 transition-colors"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center shrink-0">
+              <ThermometerSun className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-green-700">
+                ✅ ไม่มีอาการเหล่านี้เลย
+              </h3>
+              <p className="text-sm text-green-600 mt-1">
+                ไปต่อเพื่อคัดกรองอาการทั่วไป
+              </p>
+            </div>
+          </div>
+        </motion.button>
+      </motion.div>
+    </div>
+  );
+}

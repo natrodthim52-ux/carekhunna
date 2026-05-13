@@ -1,0 +1,125 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Send, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { base44 } from '@/api/base44Client';
+import TriageResult from '@/components/screening/TriageResult';
+
+export default function SymptomChecker() {
+  const navigate = useNavigate();
+  const [symptoms, setSymptoms] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleSubmit = async () => {
+    if (!symptoms.trim()) return;
+    setLoading(true);
+
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `คุณเป็นระบบคัดกรองอาการสุขภาพเบื้องต้น (AI Health Triage) สำหรับชุมชนไทย
+      
+ผู้ป่วยมีอาการ: "${symptoms}"
+
+กรุณาวิเคราะห์อาการและจำแนกระดับความรุนแรง:
+- "green": อาการปกติ/ไม่รุนแรง ดูแลตัวเองได้
+- "yellow": อาการควรเฝ้าระวัง ควรได้รับการตรวจเพิ่มเติม
+- "red": อาการอันตราย/ฉุกเฉิน ต้องพบแพทย์ทันที
+
+ตอบเป็นภาษาไทย ใช้ภาษาที่เข้าใจง่ายสำหรับชาวบ้านทั่วไป`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          triage_level: { type: "string", enum: ["green", "yellow", "red"] },
+          condition_name: { type: "string", description: "ชื่อภาวะ/โรคที่อาจเป็นได้" },
+          description: { type: "string", description: "คำอธิบายอาการว่าเกิดจากอะไร" },
+          self_care: { type: "array", items: { type: "string" }, description: "คำแนะนำการดูแลตัวเอง" },
+          warning_signs: { type: "array", items: { type: "string" }, description: "อาการที่ควรเฝ้าระวัง" },
+          recommended_medicines: { type: "array", items: { type: "string" }, description: "ยาที่แนะนำ (ถ้ามี)" },
+          needs_followup: { type: "boolean", description: "ต้องติดตามอาการหรือไม่" }
+        }
+      }
+    });
+
+    setResult({ ...res, symptoms });
+
+    await base44.entities.ScreeningHistory.create({
+      symptoms,
+      triage_level: res.triage_level,
+      ai_analysis: res.description,
+      ai_recommendation: res.self_care?.join(', ') || ''
+    });
+
+    setLoading(false);
+  };
+
+  if (result) {
+    return <TriageResult result={result} onBack={() => { setResult(null); setSymptoms(''); }} />;
+  }
+
+  return (
+    <div className="px-5 pt-6 pb-6">
+      <button onClick={() => navigate('/screening')} className="flex items-center gap-1 text-muted-foreground mb-4">
+        <ChevronLeft className="w-5 h-5" />
+        <span className="text-sm">ย้อนกลับ</span>
+      </button>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
+        <div className="bg-card rounded-3xl p-6 border border-border">
+          <h1 className="text-xl font-bold text-foreground mb-1">
+            โอเคคค... ถ้าอย่างนั้น
+          </h1>
+          <p className="text-muted-foreground">
+            เรามาเริ่มคัดกรองอาการทั่วไปกันเถอะ! 😊
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-base font-semibold text-foreground">
+            บอกอาการที่เป็นให้เราฟังหน่อยน้า
+          </label>
+          <Textarea
+            placeholder="เช่น ปวดหัว มีไข้ ไอ เจ็บคอ ท้องเสีย..."
+            value={symptoms}
+            onChange={(e) => setSymptoms(e.target.value)}
+            className="min-h-[120px] rounded-2xl text-base border-2 border-border focus:border-primary resize-none"
+          />
+          <div className="flex flex-wrap gap-2">
+            {['ปวดหัว', 'มีไข้', 'ไอ', 'เจ็บคอ', 'ท้องเสีย', 'ผื่นคัน', 'ปวดท้อง', 'วิงเวียน'].map(tag => (
+              <button
+                key={tag}
+                onClick={() => setSymptoms(prev => prev ? `${prev} ${tag}` : tag)}
+                className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={!symptoms.trim() || loading}
+          className="w-full h-14 rounded-2xl text-base font-bold shadow-lg"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              กำลังวิเคราะห์อาการ...
+            </>
+          ) : (
+            <>
+              <Send className="w-5 h-5 mr-2" />
+              เริ่มคัดกรอง
+            </>
+          )}
+        </Button>
+      </motion.div>
+    </div>
+  );
+}

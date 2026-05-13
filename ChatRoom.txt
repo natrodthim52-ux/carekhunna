@@ -1,0 +1,173 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Send, MapPin, Camera, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+const quickTemplates = [
+  'สอบถามเรื่องการรับยา',
+  'ขอนัดตรวจที่บ้าน',
+  'แจ้งเหตุฉุกเฉิน',
+  'สอบถามอาการทั่วไป',
+];
+
+export default function ChatRoom() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(window.location.search);
+  const volunteerId = window.location.pathname.split('/chat/')[1];
+  const [message, setMessage] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const { data: volunteer } = useQuery({
+    queryKey: ['volunteer', volunteerId],
+    queryFn: async () => {
+      const all = await base44.entities.Volunteer.list();
+      return all.find(v => v.id === volunteerId);
+    },
+    enabled: !!volunteerId,
+  });
+
+  const { data: messages = [] } = useQuery({
+    queryKey: ['messages', volunteerId],
+    queryFn: () => base44.entities.ChatMessage.filter({ volunteer_id: volunteerId }, 'created_date', 50),
+    enabled: !!volunteerId,
+    refetchInterval: 3000,
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: (data) => base44.entities.ChatMessage.create(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['messages', volunteerId] }),
+  });
+
+  const handleSend = (text) => {
+    const msg = text || message;
+    if (!msg.trim()) return;
+    sendMutation.mutate({
+      volunteer_id: volunteerId,
+      sender: 'user',
+      message: msg,
+      message_type: 'text',
+    });
+    setMessage('');
+  };
+
+  const handleSendLocation = () => {
+    sendMutation.mutate({
+      volunteer_id: volunteerId,
+      sender: 'user',
+      message: '📍 แชร์ตำแหน่งที่อยู่ปัจจุบัน',
+      message_type: 'location',
+    });
+  };
+
+  const handleSendImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    sendMutation.mutate({
+      volunteer_id: volunteerId,
+      sender: 'user',
+      message: '📷 ส่งรูปภาพ',
+      message_type: 'image',
+      file_url,
+    });
+  };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      {/* Header */}
+      <div className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+        <button onClick={() => navigate('/volunteers')} className="text-muted-foreground">
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+          <User className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="font-bold text-foreground text-sm">{volunteer?.name || 'อสม.'}</h2>
+          <p className="text-xs text-muted-foreground">{volunteer?.area}</p>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        {/* Quick Templates */}
+        {messages.length === 0 && (
+          <div className="space-y-3">
+            <p className="text-sm text-center text-muted-foreground">เลือกข้อความด่วน หรือพิมพ์เอง</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {quickTemplates.map(tpl => (
+                <button
+                  key={tpl}
+                  onClick={() => handleSend(tpl)}
+                  className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium hover:bg-primary/20 transition-colors"
+                >
+                  {tpl}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <motion.div
+            key={msg.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                msg.sender === 'user'
+                  ? 'bg-primary text-primary-foreground rounded-br-md'
+                  : 'bg-card border border-border text-foreground rounded-bl-md'
+              }`}
+            >
+              {msg.file_url && msg.message_type === 'image' && (
+                <img src={msg.file_url} alt="attached" className="rounded-xl mb-2 max-w-full" />
+              )}
+              <p className="text-sm">{msg.message}</p>
+            </div>
+          </motion.div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="bg-card border-t border-border px-4 py-3 pb-24 space-y-2">
+        <div className="flex gap-2">
+          <button onClick={handleSendLocation} className="text-muted-foreground hover:text-primary p-2">
+            <MapPin className="w-5 h-5" />
+          </button>
+          <label className="text-muted-foreground hover:text-primary p-2 cursor-pointer">
+            <Camera className="w-5 h-5" />
+            <input type="file" accept="image/*" className="hidden" onChange={handleSendImage} />
+          </label>
+          <Input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="พิมพ์ข้อความ..."
+            className="flex-1 rounded-full h-10"
+          />
+          <Button
+            size="icon"
+            onClick={() => handleSend()}
+            disabled={!message.trim()}
+            className="rounded-full w-10 h-10 shrink-0"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,116 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronLeft, BookOpen, Heart, Shield, Bug, Apple, Droplets, Sun } from 'lucide-react';
+
+const articles = [
+  {
+    id: 1,
+    title: 'วิธีแก้สำลักเบื้องต้น',
+    category: 'ฉุกเฉิน',
+    icon: Shield,
+    color: 'bg-red-50 text-red-600',
+    content: 'กรณีผู้ใหญ่สำลัก ให้ใช้วิธี Heimlich Maneuver โดยยืนด้านหลัง กำมือกดใต้ลิ้นปี่ดันขึ้นแรงๆ ทำซ้ำจนสิ่งแปลกปลอมหลุดออก',
+    image: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&h=250&fit=crop',
+  },
+  {
+    id: 2,
+    title: 'ยาสามัญที่ควรมีติดบ้าน',
+    category: 'ความรู้ทั่วไป',
+    icon: Heart,
+    color: 'bg-blue-50 text-blue-600',
+    content: 'ยาพาราเซตามอล ยาแก้แพ้ ผงเกลือแร่ ORS ยาธาตุน้ำขาว ยาทาแก้ผื่นคัน พลาสเตอร์ปิดแผล น้ำเกลือล้างแผล',
+    image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=250&fit=crop',
+  },
+  {
+    id: 3,
+    title: 'ช่วงนี้ไข้เลือดออกระบาด!',
+    category: 'แจ้งเตือน',
+    icon: Bug,
+    color: 'bg-amber-50 text-amber-600',
+    content: 'ป้องกันยุงลายกัดโดย: กำจัดแหล่งน้ำขัง ทายากันยุง สวมเสื้อแขนยาว อาการ: ไข้สูง ปวดศีรษะ ปวดเมื่อยตัว จุดเลือดออกใต้ผิวหนัง',
+    image: 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?w=400&h=250&fit=crop',
+  },
+  {
+    id: 4,
+    title: 'ดูแลสุขภาพผู้สูงอายุอย่างไร',
+    category: 'ผู้สูงอายุ',
+    icon: Sun,
+    color: 'bg-green-50 text-green-600',
+    content: 'ออกกำลังกายเบาๆ เช่น เดิน ยืดเหยียด ทานอาหารครบ 5 หมู่ ดื่มน้ำเพียงพอ พักผ่อนให้เพียงพอ ตรวจสุขภาพประจำปี',
+    image: 'https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?w=400&h=250&fit=crop',
+  },
+  {
+    id: 5,
+    title: 'วิธีดูแลเมื่อมีไข้',
+    category: 'ดูแลตัวเอง',
+    icon: Droplets,
+    color: 'bg-purple-50 text-purple-600',
+    content: 'เช็ดตัวด้วยน้ำอุ่น ดื่มน้ำมากๆ พักผ่อนให้เพียงพอ ทานยาลดไข้ตามขนาดที่แนะนำ หากไข้สูงกว่า 39°C เกิน 3 วัน ควรพบแพทย์',
+    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=250&fit=crop',
+  },
+  {
+    id: 6,
+    title: 'โภชนาการที่ดีเริ่มต้นที่บ้าน',
+    category: 'โภชนาการ',
+    icon: Apple,
+    color: 'bg-orange-50 text-orange-600',
+    content: 'ทานข้าวกล้อง ผักใบเขียว ผลไม้ตามฤดูกาล โปรตีนจากถั่ว ปลา ลดอาหารหวาน มัน เค็ม ดื่มน้ำ 8 แก้วต่อวัน',
+    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=250&fit=crop',
+  },
+];
+
+export default function Knowledge() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="px-5 pt-6 pb-6">
+      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-muted-foreground mb-4">
+        <ChevronLeft className="w-5 h-5" />
+        <span className="text-sm">หน้าแรก</span>
+      </button>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <BookOpen className="w-7 h-7 text-primary" />
+            คลังความรู้ฉบับชาวบ้าน
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">เรื่องสุขภาพน่ารู้ อ่านง่าย ใช้ได้จริง</p>
+        </div>
+
+        <div className="space-y-4">
+          {articles.map((article, i) => {
+            const Icon = article.icon;
+            return (
+              <motion.div
+                key={article.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm"
+              >
+                <img
+                  src={article.image}
+                  alt={article.title}
+                  className="w-full h-40 object-cover"
+                />
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${article.color}`}>
+                      {article.category}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-bold text-foreground">{article.title}</h2>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                    {article.content}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+    </div>
+  );
+}

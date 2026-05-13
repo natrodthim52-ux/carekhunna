@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronLeft, User, Save, Heart, Scale, Ruler, Droplets, AlertCircle, History, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+
+const triageBadge = {
+  green: 'bg-emerald-100 text-emerald-700',
+  yellow: 'bg-amber-100 text-amber-700',
+  red: 'bg-red-100 text-red-700',
+};
+
+const triageLabel = {
+  green: '🟢 ปกติ',
+  yellow: '🟡 เฝ้าระวัง',
+  red: '🔴 อันตราย',
+};
+
+export default function HealthProfile() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    age: '', weight: '', height: '', blood_type: 'ไม่ทราบ',
+    chronic_diseases: [], drug_allergies: [], emergency_contact: '', address: ''
+  });
+  const [newDisease, setNewDisease] = useState('');
+  const [newAllergy, setNewAllergy] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['health-profile'],
+    queryFn: () => base44.entities.HealthProfile.list(),
+  });
+
+  const { data: screenings = [] } = useQuery({
+    queryKey: ['screening-history'],
+    queryFn: () => base44.entities.ScreeningHistory.list('-created_date', 10),
+  });
+
+  const profile = profiles[0];
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        age: profile.age || '',
+        weight: profile.weight || '',
+        height: profile.height || '',
+        blood_type: profile.blood_type || 'ไม่ทราบ',
+        chronic_diseases: profile.chronic_diseases || [],
+        drug_allergies: profile.drug_allergies || [],
+        emergency_contact: profile.emergency_contact || '',
+        address: profile.address || '',
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const data = { ...form, age: Number(form.age) || 0, weight: Number(form.weight) || 0, height: Number(form.height) || 0 };
+    if (profile) {
+      await base44.entities.HealthProfile.update(profile.id, data);
+    } else {
+      await base44.entities.HealthProfile.create(data);
+    }
+    queryClient.invalidateQueries({ queryKey: ['health-profile'] });
+    setSaving(false);
+  };
+
+  const addDisease = () => {
+    if (newDisease.trim()) {
+      setForm({ ...form, chronic_diseases: [...form.chronic_diseases, newDisease.trim()] });
+      setNewDisease('');
+    }
+  };
+
+  const addAllergy = () => {
+    if (newAllergy.trim()) {
+      setForm({ ...form, drug_allergies: [...form.drug_allergies, newAllergy.trim()] });
+      setNewAllergy('');
+    }
+  };
+
+  return (
+    <div className="px-5 pt-6 pb-6">
+      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-muted-foreground mb-4">
+        <ChevronLeft className="w-5 h-5" />
+        <span className="text-sm">หน้าแรก</span>
+      </button>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+        <h1 className="text-2xl font-bold text-foreground">สมุดสุขภาพประจำตัว</h1>
+
+        {/* Basic Info */}
+        <div className="bg-card rounded-3xl p-5 border border-border space-y-4">
+          <h2 className="font-bold flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            ข้อมูลพื้นฐาน
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">อายุ (ปี)</label>
+              <Input type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className="rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">น้ำหนัก (กก.)</label>
+              <Input type="number" value={form.weight} onChange={e => setForm({ ...form, weight: e.target.value })} className="rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">ส่วนสูง (ซม.)</label>
+              <Input type="number" value={form.height} onChange={e => setForm({ ...form, height: e.target.value })} className="rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">กรุ๊ปเลือด</label>
+              <Select value={form.blood_type} onValueChange={v => setForm({ ...form, blood_type: v })}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'AB', 'O', 'ไม่ทราบ'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">เบอร์ติดต่อฉุกเฉิน</label>
+            <Input value={form.emergency_contact} onChange={e => setForm({ ...form, emergency_contact: e.target.value })} className="rounded-xl" placeholder="เช่น 081-xxx-xxxx" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">ที่อยู่</label>
+            <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="rounded-xl" placeholder="ที่อยู่ปัจจุบัน" />
+          </div>
+        </div>
+
+        {/* Chronic Diseases */}
+        <div className="bg-card rounded-3xl p-5 border border-border space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <Heart className="w-5 h-5 text-red-500" />
+            โรคประจำตัว
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {form.chronic_diseases.map((d, i) => (
+              <Badge key={i} variant="secondary" className="rounded-full px-3 py-1 flex items-center gap-1">
+                {d}
+                <button onClick={() => setForm({ ...form, chronic_diseases: form.chronic_diseases.filter((_, idx) => idx !== i) })} className="ml-1 text-muted-foreground hover:text-destructive">×</button>
+              </Badge>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input value={newDisease} onChange={e => setNewDisease(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDisease()} placeholder="เพิ่มโรคประจำตัว" className="rounded-xl" />
+            <Button variant="outline" onClick={addDisease} className="rounded-xl shrink-0">เพิ่ม</Button>
+          </div>
+        </div>
+
+        {/* Drug Allergies */}
+        <div className="bg-card rounded-3xl p-5 border border-border space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-amber-500" />
+            ยาที่แพ้
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {form.drug_allergies.map((a, i) => (
+              <Badge key={i} variant="destructive" className="rounded-full px-3 py-1 flex items-center gap-1 bg-red-50 text-red-700 border-red-200">
+                {a}
+                <button onClick={() => setForm({ ...form, drug_allergies: form.drug_allergies.filter((_, idx) => idx !== i) })} className="ml-1 hover:text-red-900">×</button>
+              </Badge>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input value={newAllergy} onChange={e => setNewAllergy(e.target.value)} onKeyDown={e => e.key === 'Enter' && addAllergy()} placeholder="เพิ่มยาที่แพ้" className="rounded-xl" />
+            <Button variant="outline" onClick={addAllergy} className="rounded-xl shrink-0">เพิ่ม</Button>
+          </div>
+        </div>
+
+        <Button onClick={handleSave} disabled={saving} className="w-full rounded-2xl h-12 font-bold">
+          {saving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
+          บันทึกข้อมูล
+        </Button>
+
+        {/* Screening History */}
+        {screenings.length > 0 && (
+          <div className="bg-card rounded-3xl p-5 border border-border space-y-3">
+            <h2 className="font-bold flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              ประวัติการคัดกรอง
+            </h2>
+            <div className="space-y-2">
+              {screenings.map(s => (
+                <div key={s.id} className="flex items-center justify-between p-3 bg-muted rounded-2xl">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{s.symptoms}</p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(s.created_date), 'dd/MM/yyyy HH:mm')}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${triageBadge[s.triage_level]}`}>
+                    {triageLabel[s.triage_level]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+}
